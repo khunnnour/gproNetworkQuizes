@@ -26,9 +26,12 @@
 #define _GPRO_NET_RAKNET_SERVER_HPP_
 #ifdef __cplusplus
 
+const int GPRO_MAX_NUM_GAMES =10;
 
 #include "gpro-net/gpro-net/gpro-net-RakNet.hpp"
 
+class client;
+class GameServer;
 
 namespace gproNet
 {
@@ -37,7 +40,6 @@ namespace gproNet
 	enum eMessageServer
 	{
 		ID_GPRO_MESSAGE_SERVER_BEGIN = ID_GPRO_MESSAGE_COMMON_END,
-
 
 
 		ID_GPRO_MESSAGE_SERVER_END
@@ -67,6 +69,11 @@ namespace gproNet
 		//		param msgID: message identifier
 		//		return: was message processed
 		virtual bool ProcessMessage(RakNet::BitStream& bitstream, RakNet::SystemAddress const sender, RakNet::Time const dtSendToReceive, RakNet::MessageID const msgID);
+
+		RakNet::RakString GetActiveGames();
+
+		GameServer allGames[GPRO_MAX_NUM_GAMES];
+		std::vector<client> allClients;
 	};
 
 }

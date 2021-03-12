@@ -23,7 +23,41 @@
 */
 
 #include "gpro-net/gpro-net-server/gpro-net-RakNet-Server.hpp"
+#include <string>
+#include <vector>
 
+class client {
+public:
+	RakNet::RakString username;
+	RakNet::SystemAddress sysAddress;
+};
+
+const int GPRO_MAX_PLAYERS = 5;
+
+class GameServer {
+public:
+	int serverID;
+	int currNumPlayers;
+	std::vector<client> inGamePlayers;
+
+	GameServer(int sID) {
+		serverID = sID;
+		currNumPlayers = 0;
+	}
+
+	void PlayerJoin(client p)
+	{
+		inGamePlayers.push_back(p);
+		currNumPlayers++;
+	}
+	void PlayerQuit(client p)
+	{
+		// find the client who left and remove from vector
+		currNumPlayers--;
+	}
+
+	// overload operator to rak string
+};
 
 namespace gproNet
 {
@@ -34,6 +68,12 @@ namespace gproNet
 
 		peer->Startup(MAX_CLIENTS, &sd, 1);
 		peer->SetMaximumIncomingConnections(MAX_CLIENTS);
+
+		// creates all of the game rooms
+		for (int i = 0; i < GPRO_MAX_NUM_GAMES; i++)
+		{
+			allGames[i] = GameServer(i);
+		}
 	}
 
 	cRakNetServer::~cRakNetServer()
@@ -50,6 +90,8 @@ namespace gproNet
 		switch (msgID)
 		{
 		case ID_NEW_INCOMING_CONNECTION:
+			// *- Prompt for login or something at least to get username -* //
+			// Send "login request" message
 			//printf("A connection is incoming.\n");
 			return true;
 		case ID_NO_FREE_INCOMING_CONNECTIONS:
@@ -65,14 +107,80 @@ namespace gproNet
 			// test message
 		case ID_GPRO_MESSAGE_COMMON_BEGIN:
 		{
-			// server receives greeting, print it and send one back
+			// server receives login, verify it
 			RakNet::BitStream bitstream_w;
-			ReadTest(bitstream);
+			
+			RakNet::RakString user;
+			bitstream_w.Read(user);
+
+			// Verify the user is good
+			/*
+			if(InList(allClients, username) != -1)
+			{	
+				// Throw error
+				return false;
+			}
+			*/
+			//ReadTest(bitstream);
+			client newClient;
+			newClient.username = user;
+			newClient.sysAddress = sender;
+			// add to clients vector
+
 			WriteTest(bitstream_w, "Hello client from server");
 			peer->Send(&bitstream_w, MEDIUM_PRIORITY, UNRELIABLE_SEQUENCED, 0, sender, false);
 		}	return true;
+		case ID_GPRO_REQUEST_GAMES:
+		{
+			// Send a list of all active games
+			RakNet::BitStream bitstream_w;
 
+			WriteTimestamp(bitstream_w);
+			bitstream.Write((RakNet::MessageID)ID_GPRO_REQUEST_GAMES);
+			bitstream.Write(GetActiveGames());
+
+			peer->Send(&bitstream_w, MEDIUM_PRIORITY, UNRELIABLE_SEQUENCED, 0, sender, false);
+		}	return true;
+		case ID_GPRO_REQUEST_JOIN_GAME:
+		{
+			// Checks if valid game provided
+			/*
+			if(0<game<MAX)
+			{
+				games[game].PlayerJoin();
+			}
+			*/
+			// Moves them to that room
+		}	return true;
+		case ID_GPRO_LEAVE_GAME:
+		{
+			// Check if they are even
+			// Checks if valid game provided
+			/*
+			if(0<game<MAX)
+			{
+				games[game].PlayerQuit();
+			}
+			*/
+		}	return true;
 		}
 		return false;
+	}
+
+	RakNet::RakString cRakNetServer::GetActiveGames()
+	{
+		RakNet::RakString allGs="All Games:\n";
+
+		for (int i = 0; i < GPRO_MAX_NUM_GAMES; i++)
+		{
+			allGs += allGames[i].serverID;
+			allGs += " - ";
+			allGs += allGames[i].currNumPlayers;
+			allGs += " / ";
+			allGs += GPRO_MAX_PLAYERS;
+			allGs += "\n";
+		}
+
+		return allGs;
 	}
 }
