@@ -35,9 +35,9 @@
 extern "C" {
 #endif	// __cplusplus
 
-
-GPRO_NET_SYMBOL int foo(int bar);
-
+	GPRO_NET_SYMBOL void setScale(float x, float y, float z);
+	GPRO_NET_SYMBOL void setRot(float x, float y, float z);
+	GPRO_NET_SYMBOL void setTrans(float x, float y, float z);
 
 #ifdef __cplusplus
 }
